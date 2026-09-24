@@ -17,7 +17,7 @@ http://127.0.0.1:5000
  
  ## Testing APIs
 
-API endpoints can be tested using **Postman** by sending requests to the following URLs. The output of each stage can be used as input for the next stage.
+API endpoints can be tested using Postman by the following URLs. The output of each stage can be used as input for the next stage.
 
 GET  http://127.0.0.1:5000/api/extract
      → Fetches documents from MySQL.
