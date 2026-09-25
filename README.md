@@ -19,6 +19,7 @@ POST http://127.0.0.1:5000/api/documents/create
 
 POST http://127.0.0.1:5000/api/chunk
      → Splits the documents into smaller chunks.
+
 POST http://127.0.0.1:5000/api/embed
      → Generates embeddings for the chunks.
 
