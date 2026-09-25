@@ -3,9 +3,7 @@ from flask import Blueprint, jsonify, request
 from services.chunk_service import chunk_documents
 from langchain_core.documents import Document
 
-
 chunking_bp = Blueprint("chunking", __name__)
-
 
 @chunking_bp.route("/api/chunk", methods=["POST"])
 def chunk_api():
