@@ -1,14 +1,24 @@
 from langchain_huggingface import HuggingFaceEmbeddings
 
+embedding_model = None
 
-embedding_model = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
+
+def get_embedding_model():
+    global embedding_model
+
+    if embedding_model is None:
+        embedding_model = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+
+    return embedding_model
+
 
 def create_embeddings(chunks):
     texts = [chunk["page_content"] for chunk in chunks]
 
-    vectors = embedding_model.embed_documents(texts)
+    model = get_embedding_model()
+    vectors = model.embed_documents(texts)
 
     embedded_chunks = []
 
