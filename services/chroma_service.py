@@ -1,22 +1,31 @@
-import chromadb
+client = None
+collection = None
 
-client = chromadb.PersistentClient(path="./chroma_db")
 
-collection = client.get_or_create_collection(
-    name="rag_documents"
-)
+def get_collection():
+    global client, collection
+
+    if collection is None:
+        import chromadb
+
+        client = chromadb.PersistentClient(path="./chroma_db")
+        collection = client.get_or_create_collection(
+            name="rag_documents"
+        )
+
+    return collection
 
 
 def store_embeddings(embedded_chunks):
+    collection = get_collection()
+
     ids = []
     documents = []
     metadatas = []
     embeddings = []
 
     for chunk in embedded_chunks:
-        chunk_id = str(chunk["chunk_id"])
-
-        ids.append(chunk_id)
+        ids.append(str(chunk["chunk_id"]))
         documents.append(chunk["page_content"])
         metadatas.append(chunk["metadata"])
         embeddings.append(chunk["embedding"])
