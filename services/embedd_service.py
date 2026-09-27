@@ -1,4 +1,4 @@
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 
 embedding_model = None
 
@@ -7,8 +7,9 @@ def get_embedding_model():
     global embedding_model
 
     if embedding_model is None:
-        embedding_model = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        embedding_model = FastEmbedEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2",
+            batch_size=4
         )
 
     return embedding_model
