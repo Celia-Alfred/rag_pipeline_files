@@ -12,4 +12,4 @@ RUN pip install --no-cache-dir gunicorn
 
 COPY . .
 
-CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-8000} app:app"]
+CMD ["sh", "-c", "exec gunicorn --timeout 300 --bind 0.0.0.0:${PORT:-8000} app:app"]
