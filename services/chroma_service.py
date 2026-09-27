@@ -1,9 +1,11 @@
 import chromadb
 
 client = chromadb.PersistentClient(path="./chroma_db")
+
 collection = client.get_or_create_collection(
     name="rag_documents"
 )
+
 
 def store_embeddings(embedded_chunks):
     ids = []
@@ -19,7 +21,7 @@ def store_embeddings(embedded_chunks):
         metadatas.append(chunk["metadata"])
         embeddings.append(chunk["embedding"])
 
-    collection.add(
+    collection.upsert(
         ids=ids,
         documents=documents,
         metadatas=metadatas,
