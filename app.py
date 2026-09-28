@@ -10,6 +10,7 @@ from routes.chroma_routes import chroma_bp
 app = Flask(__name__)
 CORS(app)
 
+# Register API routes
 app.register_blueprint(extract_bp)
 app.register_blueprint(document_bp)
 app.register_blueprint(chunking_bp)
@@ -20,7 +21,14 @@ app.register_blueprint(chroma_bp)
 @app.route("/")
 def home():
     return {
-        "message": "RAG Data Pipeline API is running"
+        "message": "RAG Data Pipeline API is running",
+        "endpoints": {
+            "extract": "GET /api/extract",
+            "create_documents": "POST /api/documents/create",
+            "chunk": "POST /api/chunk",
+            "embed": "POST /api/embed",
+            "store": "POST /api/store"
+        }
     }
 
 
