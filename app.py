@@ -20,16 +20,24 @@ app.register_blueprint(chroma_bp)
 
 @app.route("/")
 def home():
-    return {
-        "message": "RAG Data Pipeline API is running",
-        "endpoints": {
-            "extract": "GET /api/extract",
-            "create_documents": "POST /api/documents/create",
-            "chunk": "POST /api/chunk",
-            "embed": "POST /api/embed",
-            "store": "POST /api/store"
-        }
-    }
+    return """
+    <html>
+        <head>
+            <title>RAG Data Pipeline API</title>
+        </head>
+        <body>
+            <h1>RAG Data Pipeline API is running</h1>
+
+            <h2>Available API Endpoints</h2>
+
+            <p><b>GET</b> /api/extract</p>
+            <p><b>POST</b> /api/documents/create</p>
+            <p><b>POST</b> /api/chunk</p>
+            <p><b>POST</b> /api/embed</p>
+            <p><b>POST</b> /api/store</p>
+        </body>
+    </html>
+    """
 
 
 if __name__ == "__main__":
