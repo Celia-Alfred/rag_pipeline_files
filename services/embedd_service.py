@@ -1,41 +1,43 @@
-from fastembed import TextEmbedding
+import hashlib
+import math
 
-embedding_model = None
+EMBEDDING_DIMENSION = 384
 
 
-def get_embedding_model():
-    global embedding_model
+def create_embedding(text):
+    vector = [0.0] * EMBEDDING_DIMENSION
 
-    if embedding_model is None:
-        embedding_model = TextEmbedding(
-            model_name="sentence-transformers/all-MiniLM-L6-v2",
-            cache_dir="/app/fastembed_cache",
-            threads=1
-        )
+    words = text.lower().split()
 
-    return embedding_model
+    for word in words:
+        digest = hashlib.sha256(word.encode("utf-8")).digest()
+
+        for i in range(0, len(digest), 2):
+            value = int.from_bytes(digest[i:i + 2], "big")
+            index = value % EMBEDDING_DIMENSION
+
+            sign = 1.0 if value % 2 == 0 else -1.0
+            vector[index] += sign
+
+    magnitude = math.sqrt(sum(x * x for x in vector))
+
+    if magnitude > 0:
+        vector = [x / magnitude for x in vector]
+
+    return vector
 
 
 def create_embeddings(chunks):
-    model = get_embedding_model()
-
-    texts = [chunk["page_content"] for chunk in chunks]
-
-    vectors = list(
-        model.embed(
-            texts,
-            batch_size=1
-        )
-    )
-
     embedded_chunks = []
 
-    for chunk, vector in zip(chunks, vectors):
+    for chunk in chunks:
+        vector = create_embedding(chunk["page_content"])
+
         embedded_chunks.append({
             "chunk_id": chunk["chunk_id"],
             "page_content": chunk["page_content"],
             "metadata": chunk["metadata"],
-            "embedding": vector.tolist()
+            "embedding": vector
         })
 
     return embedded_chunks
