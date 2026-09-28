@@ -1,6 +1,6 @@
 ## Deployed API
 
-[Render API](https://rag-data-pipeline.onrender.com)
+[Render] https://rag-data-pipeline.onrender.com
 
 ## API Endpoints
 
