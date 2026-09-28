@@ -1,5 +1,7 @@
 import json
-from flask import Flask, CORS, Response
+
+from flask import Flask, Response
+from flask_cors import CORS
 
 from routes.extract_routes import extract_bp
 from routes.document_routes import document_bp
