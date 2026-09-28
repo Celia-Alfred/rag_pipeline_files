@@ -1,3 +1,6 @@
+## Deployed API
+
+[Render API](https://rag-data-pipeline.onrender.com)
 
 ## API Endpoints
 
@@ -9,7 +12,5 @@
 | POST | `/api/embed` | Generate embeddings |
 | POST | `/api/store` | Store embeddings in ChromaDB |
  
-## Deployed API
 
-https://rag-data-pipeline.onrender.com
 
