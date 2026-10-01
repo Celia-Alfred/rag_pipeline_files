@@ -9,6 +9,7 @@ def get_collection():
         import chromadb
 
         client = chromadb.PersistentClient(path="./chroma_db")
+
         collection = client.get_or_create_collection(
             name="rag_documents"
         )
@@ -41,3 +42,14 @@ def store_embeddings(embedded_chunks):
         "count": len(ids),
         "ids": ids
     }
+
+
+def retrieve_embeddings(query_embedding, top_k=3):
+    collection = get_collection()
+
+    results = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=top_k
+    )
+
+    return results
