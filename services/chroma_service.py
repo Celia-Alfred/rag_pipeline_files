@@ -20,36 +20,51 @@ def get_collection():
 def store_embeddings(embedded_chunks):
     collection = get_collection()
 
-    ids = []
-    documents = []
-    metadatas = []
-    embeddings = []
+    if not isinstance(embedded_chunks, list):
+        raise ValueError("Expected a list of embedded chunks")
 
-    for chunk in embedded_chunks:
-        ids.append(str(chunk["chunk_id"]))
-        documents.append(chunk["page_content"])
-        metadatas.append(chunk["metadata"])
-        embeddings.append(chunk["embedding"])
+    if len(embedded_chunks) == 0:
+        raise ValueError("No embedded chunks provided")
 
-    collection.upsert(
-        ids=ids,
-        documents=documents,
-        metadatas=metadatas,
-        embeddings=embeddings
-    )
+    stored_ids = []
+
+    # Store in small batches to reduce memory usage
+    batch_size = 5
+
+    for i in range(0, len(embedded_chunks), batch_size):
+
+        batch = embedded_chunks[i:i + batch_size]
+
+        ids = []
+        documents = []
+        metadatas = []
+        embeddings = []
+
+        for chunk in batch:
+
+            if not all(
+                key in chunk
+                for key in ["chunk_id", "page_content", "metadata", "embedding"]
+            ):
+                raise ValueError(
+                    "Each chunk must contain chunk_id, page_content, metadata and embedding"
+                )
+
+            ids.append(str(chunk["chunk_id"]))
+            documents.append(chunk["page_content"])
+            metadatas.append(chunk["metadata"])
+            embeddings.append(chunk["embedding"])
+
+        collection.upsert(
+            ids=ids,
+            documents=documents,
+            metadatas=metadatas,
+            embeddings=embeddings
+        )
+
+        stored_ids.extend(ids)
 
     return {
-        "count": len(ids),
-        "ids": ids
+        "count": len(stored_ids),
+        "ids": stored_ids
     }
-
-
-def retrieve_embeddings(query_embedding, top_k=3):
-    collection = get_collection()
-
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=top_k
-    )
-
-    return results

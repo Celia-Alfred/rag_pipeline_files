@@ -16,6 +16,12 @@ def store_api():
                 "message": "No embeddings provided"
             }), 400
 
+        if not isinstance(embedded_chunks, list):
+            return jsonify({
+                "status": "error",
+                "message": "Request body must be a list of embedded chunks"
+            }), 400
+
         result = store_embeddings(embedded_chunks)
 
         return jsonify({
