@@ -3,20 +3,30 @@ from flask import Blueprint, jsonify, request
 from services.chroma_service import store_embeddings
 
 
-chroma_bp = Blueprint("chroma", __name__)
+chroma_bp = Blueprint(
+    "chroma",
+    __name__
+)
 
 
-@chroma_bp.route("/api/store", methods=["POST"])
+@chroma_bp.route(
+    "/api/store",
+    methods=["POST"]
+)
 def store_api():
 
-    print("STORE API: request received", flush=True)
+    print(
+        "STORE API: request received",
+        flush=True
+    )
 
     try:
 
         embedded_chunks = request.get_json()
 
         print(
-            f"STORE API: received data type: {type(embedded_chunks)}",
+            f"STORE API: received data type: "
+            f"{type(embedded_chunks)}",
             flush=True
         )
 
@@ -27,11 +37,17 @@ def store_api():
                 "message": "No embeddings provided"
             }), 400
 
-        if not isinstance(embedded_chunks, list):
+        if not isinstance(
+            embedded_chunks,
+            list
+        ):
 
             return jsonify({
                 "status": "error",
-                "message": "Request body must be a list of embedded chunks"
+                "message": (
+                    "Request body must be a list "
+                    "of embedded chunks"
+                )
             }), 400
 
         result = store_embeddings(
@@ -40,10 +56,13 @@ def store_api():
 
         return jsonify({
             "status": "success",
-            "message": "Embeddings stored successfully in ChromaDB",
+            "message": (
+                "Embeddings stored successfully "
+                "in ChromaDB"
+            ),
             "count": result["count"],
             "ids": result["ids"]
-        })
+        }), 200
 
     except Exception as e:
 

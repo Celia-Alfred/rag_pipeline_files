@@ -4,19 +4,26 @@ model = None
 
 
 def get_model():
+
     global model
 
     if model is None:
 
-        print("EMBED: loading SentenceTransformer model", flush=True)
+        print(
+            "EMBED: loading lightweight MiniLM model",
+            flush=True
+        )
 
         from sentence_transformers import SentenceTransformer
 
         model = SentenceTransformer(
-            "sentence-transformers/all-MiniLM-L6-v2"
+            "sentence-transformers/paraphrase-MiniLM-L3-v2"
         )
 
-        print("EMBED: model loaded successfully", flush=True)
+        print(
+            "EMBED: lightweight MiniLM model loaded successfully",
+            flush=True
+        )
 
     return model
 
@@ -25,13 +32,19 @@ def release_model():
 
     global model
 
-    print("EMBED: releasing model from memory", flush=True)
+    print(
+        "EMBED: releasing MiniLM model from memory",
+        flush=True
+    )
 
     model = None
 
     gc.collect()
 
-    print("EMBED: model released", flush=True)
+    print(
+        "EMBED: MiniLM model released",
+        flush=True
+    )
 
 
 def create_embedding(text):

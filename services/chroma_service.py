@@ -115,28 +115,16 @@ def store_embeddings(embedded_chunks):
         for chunk in batch:
 
             if "chunk_id" not in chunk:
-
-                raise ValueError(
-                    "Missing chunk_id"
-                )
+                raise ValueError("Missing chunk_id")
 
             if "page_content" not in chunk:
-
-                raise ValueError(
-                    "Missing page_content"
-                )
+                raise ValueError("Missing page_content")
 
             if "metadata" not in chunk:
-
-                raise ValueError(
-                    "Missing metadata"
-                )
+                raise ValueError("Missing metadata")
 
             if "embedding" not in chunk:
-
-                raise ValueError(
-                    "Missing embedding"
-                )
+                raise ValueError("Missing embedding")
 
             ids.append(
                 str(chunk["chunk_id"])
