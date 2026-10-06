@@ -3,43 +3,80 @@ collection = None
 
 
 def get_collection():
+
     global client, collection
 
-    print("STORE: get_collection started", flush=True)
+    print(
+        "STORE: get_collection started",
+        flush=True
+    )
 
     if collection is None:
 
-        print("STORE: importing chromadb", flush=True)
+        print(
+            "STORE: importing chromadb",
+            flush=True
+        )
 
-        import chromadb
+        try:
 
-        print("STORE: creating PersistentClient", flush=True)
+            import chromadb
+
+            print(
+                "CHROMA: import successful",
+                flush=True
+            )
+
+        except Exception as e:
+
+            print(
+                f"CHROMA IMPORT ERROR: {str(e)}",
+                flush=True
+            )
+
+            raise
+
+        print(
+            "STORE: creating PersistentClient",
+            flush=True
+        )
 
         client = chromadb.PersistentClient(
             path="./chroma_db"
         )
 
-        print("STORE: PersistentClient created", flush=True)
+        print(
+            "STORE: PersistentClient created",
+            flush=True
+        )
 
         collection = client.get_or_create_collection(
             name="rag_documents"
         )
 
-        print("STORE: collection created", flush=True)
+        print(
+            "STORE: collection created",
+            flush=True
+        )
 
     return collection
 
 
 def store_embeddings(embedded_chunks):
 
-    print("STORE: store_embeddings started", flush=True)
+    print(
+        "STORE: store_embeddings started",
+        flush=True
+    )
 
     if not isinstance(embedded_chunks, list):
+
         raise ValueError(
             "Request body must be a list of embedded chunks"
         )
 
     if len(embedded_chunks) == 0:
+
         raise ValueError(
             "No embedded chunks provided"
         )
@@ -55,7 +92,11 @@ def store_embeddings(embedded_chunks):
 
     batch_size = 5
 
-    for start in range(0, len(embedded_chunks), batch_size):
+    for start in range(
+        0,
+        len(embedded_chunks),
+        batch_size
+    ):
 
         batch = embedded_chunks[
             start:start + batch_size
@@ -74,21 +115,25 @@ def store_embeddings(embedded_chunks):
         for chunk in batch:
 
             if "chunk_id" not in chunk:
+
                 raise ValueError(
                     "Missing chunk_id"
                 )
 
             if "page_content" not in chunk:
+
                 raise ValueError(
                     "Missing page_content"
                 )
 
             if "metadata" not in chunk:
+
                 raise ValueError(
                     "Missing metadata"
                 )
 
             if "embedding" not in chunk:
+
                 raise ValueError(
                     "Missing embedding"
                 )
@@ -139,9 +184,15 @@ def store_embeddings(embedded_chunks):
     }
 
 
-def retrieve_embeddings(query_embedding, top_k=3):
+def retrieve_embeddings(
+    query_embedding,
+    top_k=3
+):
 
-    print("RETRIEVE: getting collection", flush=True)
+    print(
+        "RETRIEVE: getting collection",
+        flush=True
+    )
 
     collection = get_collection()
 
