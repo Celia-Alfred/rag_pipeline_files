@@ -1,6 +1,3 @@
-import chromadb
-
-
 client = None
 collection = None
 
@@ -8,65 +5,143 @@ collection = None
 def get_collection():
     global client, collection
 
+    print("STORE: get_collection started", flush=True)
+
     if collection is None:
-        client = chromadb.Client()
+
+        print("STORE: importing chromadb", flush=True)
+
+        import chromadb
+
+        print("STORE: creating PersistentClient", flush=True)
+
+        client = chromadb.PersistentClient(
+            path="./chroma_db"
+        )
+
+        print("STORE: PersistentClient created", flush=True)
 
         collection = client.get_or_create_collection(
-            name="rag_documents_384"
+            name="rag_documents"
         )
+
+        print("STORE: collection created", flush=True)
 
     return collection
 
 
 def store_embeddings(embedded_chunks):
 
+    print("STORE: store_embeddings started", flush=True)
+
     if not isinstance(embedded_chunks, list):
-        raise ValueError("Expected a list of embedded chunks")
+        raise ValueError(
+            "Request body must be a list of embedded chunks"
+        )
 
     if len(embedded_chunks) == 0:
-        raise ValueError("No embedded chunks provided")
+        raise ValueError(
+            "No embedded chunks provided"
+        )
+
+    print(
+        f"STORE: received {len(embedded_chunks)} chunks",
+        flush=True
+    )
 
     collection = get_collection()
 
-    ids = []
-    documents = []
-    metadatas = []
-    embeddings = []
+    stored_ids = []
 
-    for chunk in embedded_chunks:
+    batch_size = 5
 
-        if not all(
-            key in chunk
-            for key in [
-                "chunk_id",
-                "page_content",
-                "metadata",
-                "embedding"
-            ]
-        ):
-            raise ValueError(
-                "Each chunk must contain chunk_id, page_content, metadata and embedding"
+    for start in range(0, len(embedded_chunks), batch_size):
+
+        batch = embedded_chunks[
+            start:start + batch_size
+        ]
+
+        print(
+            f"STORE: processing batch starting at {start}",
+            flush=True
+        )
+
+        ids = []
+        documents = []
+        metadatas = []
+        embeddings = []
+
+        for chunk in batch:
+
+            if "chunk_id" not in chunk:
+                raise ValueError(
+                    "Missing chunk_id"
+                )
+
+            if "page_content" not in chunk:
+                raise ValueError(
+                    "Missing page_content"
+                )
+
+            if "metadata" not in chunk:
+                raise ValueError(
+                    "Missing metadata"
+                )
+
+            if "embedding" not in chunk:
+                raise ValueError(
+                    "Missing embedding"
+                )
+
+            ids.append(
+                str(chunk["chunk_id"])
             )
 
-        ids.append(str(chunk["chunk_id"]))
-        documents.append(chunk["page_content"])
-        metadatas.append(chunk["metadata"])
-        embeddings.append(chunk["embedding"])
+            documents.append(
+                chunk["page_content"]
+            )
 
-    collection.upsert(
-        ids=ids,
-        documents=documents,
-        metadatas=metadatas,
-        embeddings=embeddings
+            metadatas.append(
+                chunk["metadata"]
+            )
+
+            embeddings.append(
+                chunk["embedding"]
+            )
+
+        print(
+            f"STORE: upserting {len(ids)} chunks",
+            flush=True
+        )
+
+        collection.upsert(
+            ids=ids,
+            documents=documents,
+            metadatas=metadatas,
+            embeddings=embeddings
+        )
+
+        print(
+            f"STORE: batch {start} stored successfully",
+            flush=True
+        )
+
+        stored_ids.extend(ids)
+
+    print(
+        "STORE: all embeddings stored successfully",
+        flush=True
     )
 
     return {
-        "count": len(ids),
-        "ids": ids
+        "count": len(stored_ids),
+        "ids": stored_ids
     }
 
 
 def retrieve_embeddings(query_embedding, top_k=3):
+
+    print("RETRIEVE: getting collection", flush=True)
 
     collection = get_collection()
 
