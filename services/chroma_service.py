@@ -9,18 +9,22 @@ def get_collection():
     global client, collection
 
     if collection is None:
-        client = chromadb.PersistentClient(
-            path="./chroma_db"
-        )
+        client = chromadb.Client()
 
         collection = client.get_or_create_collection(
-            name="rag_documents"
+            name="rag_documents_384"
         )
 
     return collection
 
 
 def store_embeddings(embedded_chunks):
+
+    if not isinstance(embedded_chunks, list):
+        raise ValueError("Expected a list of embedded chunks")
+
+    if len(embedded_chunks) == 0:
+        raise ValueError("No embedded chunks provided")
 
     collection = get_collection()
 
@@ -30,6 +34,19 @@ def store_embeddings(embedded_chunks):
     embeddings = []
 
     for chunk in embedded_chunks:
+
+        if not all(
+            key in chunk
+            for key in [
+                "chunk_id",
+                "page_content",
+                "metadata",
+                "embedding"
+            ]
+        ):
+            raise ValueError(
+                "Each chunk must contain chunk_id, page_content, metadata and embedding"
+            )
 
         ids.append(str(chunk["chunk_id"]))
         documents.append(chunk["page_content"])
