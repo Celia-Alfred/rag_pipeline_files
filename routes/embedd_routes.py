@@ -37,7 +37,10 @@ def embed_api():
                 "message": "No chunks provided"
             }), 400
 
-        if not isinstance(chunks, list):
+        if not isinstance(
+            chunks,
+            list
+        ):
 
             return jsonify({
                 "status": "error",

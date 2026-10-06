@@ -1,100 +1,108 @@
-import gc
+import os
 
-model = None
-
-
-def get_model():
-
-    global model
-
-    if model is None:
-
-        print(
-            "EMBED: loading lightweight MiniLM model",
-            flush=True
-        )
-
-        from sentence_transformers import SentenceTransformer
-
-        model = SentenceTransformer(
-            "sentence-transformers/paraphrase-MiniLM-L3-v2"
-        )
-
-        print(
-            "EMBED: lightweight MiniLM model loaded successfully",
-            flush=True
-        )
-
-    return model
+from huggingface_hub import InferenceClient
 
 
-def release_model():
+MODEL_NAME = "sentence-transformers/paraphrase-MiniLM-L3-v2"
 
-    global model
 
-    print(
-        "EMBED: releasing MiniLM model from memory",
-        flush=True
-    )
-
-    model = None
-
-    gc.collect()
-
-    print(
-        "EMBED: MiniLM model released",
-        flush=True
-    )
+client = InferenceClient(
+    token=os.getenv("HF_TOKEN")
+)
 
 
 def create_embedding(text):
 
-    try:
+    print(
+        "EMBED: sending text to Hugging Face API",
+        flush=True
+    )
 
-        model_instance = get_model()
+    if not text:
 
-        embedding = model_instance.encode(text)
+        raise ValueError(
+            "Text cannot be empty"
+        )
 
-        return embedding.tolist()
+    embedding = client.feature_extraction(
+        text,
+        model=MODEL_NAME
+    )
 
-    finally:
+    # Convert numpy array to normal Python list
+    if hasattr(embedding, "tolist"):
 
-        release_model()
+        embedding = embedding.tolist()
+
+    # Hugging Face can return shape (1, dimensions)
+    # for feature extraction.
+    if (
+        isinstance(embedding, list)
+        and len(embedding) == 1
+        and isinstance(embedding[0], list)
+    ):
+
+        embedding = embedding[0]
+
+    print(
+        f"EMBED: embedding created with "
+        f"{len(embedding)} dimensions",
+        flush=True
+    )
+
+    return embedding
 
 
 def create_embeddings(chunks):
 
     results = []
 
-    try:
+    print(
+        f"EMBED: creating embeddings for "
+        f"{len(chunks)} chunks using Hugging Face API",
+        flush=True
+    )
 
-        model_instance = get_model()
+    for index, chunk in enumerate(chunks):
 
         print(
-            f"EMBED: creating embeddings for {len(chunks)} chunks",
+            f"EMBED: processing chunk "
+            f"{index + 1}/{len(chunks)}",
             flush=True
         )
 
-        for chunk in chunks:
+        if "chunk_id" not in chunk:
 
-            embedding = model_instance.encode(
-                chunk["page_content"]
+            raise ValueError(
+                "Missing chunk_id"
             )
 
-            results.append({
-                "chunk_id": chunk["chunk_id"],
-                "page_content": chunk["page_content"],
-                "metadata": chunk["metadata"],
-                "embedding": embedding.tolist()
-            })
+        if "page_content" not in chunk:
 
-        print(
-            "EMBED: all embeddings created successfully",
-            flush=True
+            raise ValueError(
+                "Missing page_content"
+            )
+
+        if "metadata" not in chunk:
+
+            raise ValueError(
+                "Missing metadata"
+            )
+
+        embedding = create_embedding(
+            chunk["page_content"]
         )
 
-        return results
+        results.append({
+            "chunk_id": chunk["chunk_id"],
+            "page_content": chunk["page_content"],
+            "metadata": chunk["metadata"],
+            "embedding": embedding
+        })
 
-    finally:
+    print(
+        "EMBED: all embeddings created successfully",
+        flush=True
+    )
 
-        release_model()
+    return results

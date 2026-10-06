@@ -69,10 +69,14 @@ def store_embeddings(embedded_chunks):
         flush=True
     )
 
-    if not isinstance(embedded_chunks, list):
+    if not isinstance(
+        embedded_chunks,
+        list
+    ):
 
         raise ValueError(
-            "Request body must be a list of embedded chunks"
+            "Request body must be a list "
+            "of embedded chunks"
         )
 
     if len(embedded_chunks) == 0:
@@ -82,7 +86,8 @@ def store_embeddings(embedded_chunks):
         )
 
     print(
-        f"STORE: received {len(embedded_chunks)} chunks",
+        f"STORE: received "
+        f"{len(embedded_chunks)} chunks",
         flush=True
     )
 
@@ -103,7 +108,8 @@ def store_embeddings(embedded_chunks):
         ]
 
         print(
-            f"STORE: processing batch starting at {start}",
+            f"STORE: processing batch "
+            f"starting at {start}",
             flush=True
         )
 
@@ -115,16 +121,24 @@ def store_embeddings(embedded_chunks):
         for chunk in batch:
 
             if "chunk_id" not in chunk:
-                raise ValueError("Missing chunk_id")
+                raise ValueError(
+                    "Missing chunk_id"
+                )
 
             if "page_content" not in chunk:
-                raise ValueError("Missing page_content")
+                raise ValueError(
+                    "Missing page_content"
+                )
 
             if "metadata" not in chunk:
-                raise ValueError("Missing metadata")
+                raise ValueError(
+                    "Missing metadata"
+                )
 
             if "embedding" not in chunk:
-                raise ValueError("Missing embedding")
+                raise ValueError(
+                    "Missing embedding"
+                )
 
             ids.append(
                 str(chunk["chunk_id"])
@@ -143,7 +157,8 @@ def store_embeddings(embedded_chunks):
             )
 
         print(
-            f"STORE: upserting {len(ids)} chunks",
+            f"STORE: upserting "
+            f"{len(ids)} chunks",
             flush=True
         )
 
@@ -155,7 +170,8 @@ def store_embeddings(embedded_chunks):
         )
 
         print(
-            f"STORE: batch {start} stored successfully",
+            f"STORE: batch {start} "
+            f"stored successfully",
             flush=True
         )
 
