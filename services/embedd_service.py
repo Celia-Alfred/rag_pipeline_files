@@ -1,108 +1,94 @@
+
 import os
-
-from huggingface_hub import InferenceClient
-
-
-MODEL_NAME = "sentence-transformers/paraphrase-MiniLM-L3-v2"
+import requests
 
 
-client = InferenceClient(
-    token=os.getenv("HF_TOKEN")
-)
+JINA_API_URL = "https://api.jina.ai/v1/embeddings"
+MODEL_NAME = "jina-embeddings-v2-base-en"
 
 
 def create_embedding(text):
+    api_key = os.getenv("JINA_API_KEY")
 
-    print(
-        "EMBED: sending text to Hugging Face API",
-        flush=True
+    if not api_key:
+        raise ValueError("JINA_API_KEY is missing from environment variables.")
+
+    if not text or not text.strip():
+        raise ValueError("Text cannot be empty.")
+
+    response = requests.post(
+        JINA_API_URL,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": MODEL_NAME,
+            "input": [text],
+            "embedding_type": "float",
+            "normalized": True
+        },
+        timeout=60
     )
 
-    if not text:
+    response.raise_for_status()
 
-        raise ValueError(
-            "Text cannot be empty"
-        )
-
-    embedding = client.feature_extraction(
-        text,
-        model=MODEL_NAME
-    )
-
-    # Convert numpy array to normal Python list
-    if hasattr(embedding, "tolist"):
-
-        embedding = embedding.tolist()
-
-    # Hugging Face can return shape (1, dimensions)
-    # for feature extraction.
-    if (
-        isinstance(embedding, list)
-        and len(embedding) == 1
-        and isinstance(embedding[0], list)
-    ):
-
-        embedding = embedding[0]
-
-    print(
-        f"EMBED: embedding created with "
-        f"{len(embedding)} dimensions",
-        flush=True
-    )
-
-    return embedding
+    data = response.json()
+    return data["data"][0]["embedding"]
 
 
 def create_embeddings(chunks):
-
     results = []
 
-    print(
-        f"EMBED: creating embeddings for "
-        f"{len(chunks)} chunks using Hugging Face API",
-        flush=True
-    )
+    if not chunks:
+        raise ValueError("No chunks provided.")
 
-    for index, chunk in enumerate(chunks):
+    texts = []
 
-        print(
-            f"EMBED: processing chunk "
-            f"{index + 1}/{len(chunks)}",
-            flush=True
+    for chunk in chunks:
+        for key in ("chunk_id", "page_content", "metadata"):
+            if key not in chunk:
+                raise ValueError(f"Missing {key}.")
+
+        texts.append(chunk["page_content"])
+
+    api_key = os.getenv("JINA_API_KEY")
+
+    if not api_key:
+        raise ValueError("JINA_API_KEY is missing from environment variables.")
+
+    batch_size = 32
+
+    for start in range(0, len(chunks), batch_size):
+        batch_chunks = chunks[start:start + batch_size]
+        batch_texts = texts[start:start + batch_size]
+
+        response = requests.post(
+            JINA_API_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": MODEL_NAME,
+                "input": batch_texts,
+                "embedding_type": "float",
+                "normalized": True
+            },
+            timeout=60
         )
 
-        if "chunk_id" not in chunk:
+        response.raise_for_status()
+        data = response.json()["data"]
 
-            raise ValueError(
-                "Missing chunk_id"
-            )
+        for item in data:
+            chunk = batch_chunks[item["index"]]
 
-        if "page_content" not in chunk:
-
-            raise ValueError(
-                "Missing page_content"
-            )
-
-        if "metadata" not in chunk:
-
-            raise ValueError(
-                "Missing metadata"
-            )
-
-        embedding = create_embedding(
-            chunk["page_content"]
-        )
-
-        results.append({
-            "chunk_id": chunk["chunk_id"],
-            "page_content": chunk["page_content"],
-            "metadata": chunk["metadata"],
-            "embedding": embedding
-        })
-
-    print(
-        "EMBED: all embeddings created successfully",
-        flush=True
-    )
+            results.append({
+                "chunk_id": chunk["chunk_id"],
+                "page_content": chunk["page_content"],
+                "metadata": chunk["metadata"],
+                "embedding": item["embedding"]
+            })
 
     return results

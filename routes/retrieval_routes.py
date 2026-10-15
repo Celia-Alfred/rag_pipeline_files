@@ -125,7 +125,6 @@ def retrieve_api():
 
         return jsonify({
             "status": "success",
-            "query": query,
             "answer": answer,
             "sources": results[
                 "metadatas"

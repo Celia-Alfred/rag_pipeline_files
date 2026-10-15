@@ -8,6 +8,7 @@ from routes.chunk_routes import chunking_bp
 from routes.embedd_routes import embedding_bp
 from routes.chroma_routes import chroma_bp
 from routes.retrieval_routes import retrieval_bp
+from routes.chat_routes import chat_bp
 app = Flask(__name__)
 CORS(app)
 
@@ -17,6 +18,8 @@ app.register_blueprint(chunking_bp)
 app.register_blueprint(embedding_bp)
 app.register_blueprint(chroma_bp)
 app.register_blueprint(retrieval_bp)
+app.register_blueprint(chat_bp)
+
 
 
 @app.route("/")
