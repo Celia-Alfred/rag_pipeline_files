@@ -15,41 +15,96 @@ def extract_file_content(file):
             "Only PDF and TXT files are supported."
         )
 
+    # Handle PDF files
     if extension == ".pdf":
-        reader = PdfReader(file)
+        try:
+            reader = PdfReader(file)
+        except Exception as error:
+            raise ValueError(
+                f"Could not read PDF file: {error}"
+            ) from error
+
         pages = []
+        empty_pages = []
 
         for page_number, page in enumerate(
             reader.pages, start=1
         ):
-            content = page.extract_text() or ""
+            try:
+                # Layout mode can help preserve columns and spacing.
+                # Fall back to normal extraction if unavailable or failed.
+                try:
+                    content = page.extract_text(
+                        extraction_mode="layout"
+                    ) or ""
+                except (TypeError, ValueError, NotImplementedError):
+                    content = page.extract_text() or ""
 
-            if content.strip():
-                pages.append({
-                    "page": page_number,
-                    "content": content
-                })
+                if content.strip():
+                    pages.append({
+                        "page": page_number,
+                        "content": content.strip()
+                    })
+                else:
+                    empty_pages.append(page_number)
+
+                print(
+                    f"[PDF Extraction] Page {page_number}: "
+                    f"{len(content)} characters",
+                    flush=True
+                )
+
+                if content.strip():
+                    print(
+                        f"[PDF Extraction] Preview: "
+                        f"{content[:200]!r}",
+                        flush=True
+                    )
+
+            except Exception as error:
+                print(
+                    f"[PDF Extraction] Failed on page "
+                    f"{page_number}: {error}",
+                    flush=True
+                )
+                empty_pages.append(page_number)
+
+        if empty_pages:
+            print(
+                "[PDF Extraction] Pages with no extracted text "
+                f"(possibly scanned/image-only): {empty_pages}",
+                flush=True
+            )
 
         if not pages:
             raise ValueError(
-                "No extractable text found in the PDF."
+                "No extractable text found in the PDF. "
+                "It may be scanned or image-based and require OCR."
             )
 
         return pages
 
-    raw_text = file.read()
+    # Handle TXT files
+    try:
+        raw_text = file.read()
 
-    if isinstance(raw_text, bytes):
-        content = raw_text.decode(
-            "utf-8-sig", errors="replace"
-        )
-    else:
-        content = raw_text
+        if isinstance(raw_text, bytes):
+            content = raw_text.decode(
+                "utf-8-sig",
+                errors="replace"
+            )
+        else:
+            content = raw_text
+
+    except Exception as error:
+        raise ValueError(
+            f"Could not read TXT file: {error}"
+        ) from error
 
     if not content.strip():
         raise ValueError("The TXT file is empty.")
 
     return [{
         "page": None,
-        "content": content
+        "content": content.strip()
     }]
