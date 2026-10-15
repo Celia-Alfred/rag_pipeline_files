@@ -15,7 +15,6 @@ def extract_file_content(file):
             "Only PDF and TXT files are supported."
         )
 
-    # Handle PDF files
     if extension == ".pdf":
         try:
             reader = PdfReader(file)
@@ -31,8 +30,6 @@ def extract_file_content(file):
             reader.pages, start=1
         ):
             try:
-                # Layout mode can help preserve columns and spacing.
-                # Fall back to normal extraction if unavailable or failed.
                 try:
                     content = page.extract_text(
                         extraction_mode="layout"
@@ -84,7 +81,6 @@ def extract_file_content(file):
 
         return pages
 
-    # Handle TXT files
     try:
         raw_text = file.read()
 

@@ -25,7 +25,6 @@ def generate_answer(query, retrieved_documents):
             "that in the uploaded documents."
         )
 
-    # Prepare readable context and ignore empty chunks
     context_parts = []
 
     for index, document in enumerate(

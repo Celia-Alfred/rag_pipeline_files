@@ -19,7 +19,6 @@ chat_bp = Blueprint("chat", __name__)
 @chat_bp.route("/api/chat", methods=["POST"])
 def chat():
 
-    # CASE 1: Upload and process multiple PDF/TXT files
     if request.files.getlist("files"):
         files = request.files.getlist("files")
         uploaded_files = []
@@ -33,7 +32,6 @@ def chat():
             document_id = str(uuid4())
 
             try:
-                # Extract text from the uploaded file
                 pages = extract_file_content(file)
 
                 documents = [
@@ -48,7 +46,6 @@ def chat():
                     for page in pages
                 ]
 
-                # Split extracted text into chunks
                 chunks = chunk_documents(documents)
 
                 if not chunks:
@@ -56,7 +53,6 @@ def chat():
                         "No text chunks could be created."
                     )
 
-                # Prepare chunks for embedding and storage
                 chunk_data = [
                     {
                         "chunk_id": str(uuid4()),
@@ -70,10 +66,8 @@ def chat():
                     for chunk in chunks
                 ]
 
-                # Generate embeddings
                 embedded_chunks = create_embeddings(chunk_data)
 
-                # Store embeddings in ChromaDB
                 result = store_embeddings(embedded_chunks)
 
                 uploaded_files.append({
@@ -123,7 +117,6 @@ def chat():
             ]
         }), 400
 
-    # CASE 2: Answer a question using stored documents
     data = request.get_json(silent=True) or {}
     question = data.get("question")
 
@@ -139,10 +132,8 @@ def chat():
     try:
         question = question.strip()
 
-        # Generate the question embedding
         query_embedding = create_embedding(question)
 
-        # Retrieve candidate chunks from ChromaDB
         results = retrieve_documents(
             query_embedding,
             top_k=20
@@ -165,7 +156,6 @@ def chat():
                 )
             }), 404
 
-        # Extract meaningful words from the question
         question_words = {
             word.lower().strip(".,?!:;()[]{}\"'")
             for word in question.split()
@@ -176,7 +166,6 @@ def chat():
         relevant_sources = []
         seen = set()
 
-        # Filter candidate chunks using question keywords
         for index, document in enumerate(retrieved_documents):
 
             source = (
@@ -216,13 +205,11 @@ def chat():
                 )
             }), 404
 
-        # Generate the answer using filtered chunks only
         answer = generate_answer(
             question,
             relevant_documents
         )
 
-        # Return only the source pages used for the answer
         return jsonify({
             "status": "success",
             "answer": answer,
