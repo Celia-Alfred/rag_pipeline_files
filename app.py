@@ -25,16 +25,14 @@ app.register_blueprint(chat_bp)
 @app.route("/")
 def home():
     response = {
-  "endpoints": {
-    "chunk": "POST /api/chunk",
-    "create_documents": "POST /api/documents/create",
-    "embed": "POST /api/embed",
-    "extract": "GET /api/extract",
-    "store": "POST /api/store",
-    "retrieve": "POST /api/retrieve"
-  },
-  "message": "RAG Data Pipeline API is running"
-}
+        "message": "RAG Document Processing API is running",
+        "endpoints": {
+            "upload and retrieve": "POST /api/chat",
+            "Delete": "DELETE /api/documents/<document_id>"
+        },
+        "supported_formats": ["PDF", "TXT"]
+    }
+    
     return Response(
         json.dumps(response, indent=2),
         mimetype="application/json"
