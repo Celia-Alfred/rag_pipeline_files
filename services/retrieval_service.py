@@ -6,21 +6,12 @@ from services.chroma_service import get_collection
 
 
 IGNORED_FILENAME_WORDS = {
-    "resume", "updated", "final", "new", "cv",
-    "pdf", "txt", "doc", "document", "file",
-    "cit", "cse", "skills", "experience"
+    "resume","pdf", "txt", "doc", "document", "file"
 }
 
 IGNORED_QUESTION_WORDS = {
-    "what", "which", "who", "when", "where", "why",
-    "how", "are", "the", "for", "from", "and", "does",
-    "did", "tell", "show", "give", "list", "find",
-    "resume", "skills", "skill", "experience",
-    "information", "about", "please", "document",
-    "uploaded", "summarize", "summary", "explain",
-    "mention", "mentioned", "provide", "describe"
+    "what", "which", "who", "when", "where", "why","how"     
 }
-
 
 def get_filename_tokens(filename):
     filename = Path(filename).stem.lower()
@@ -71,7 +62,6 @@ def find_requested_source(question):
         )
 
     return None
-
 
 def retrieve_documents(
     query_embedding,

@@ -1,7 +1,6 @@
 import json
 from flask import Flask, Response
 from flask_cors import CORS
-
 from routes.extract_routes import extract_bp
 from routes.document_routes import document_bp
 from routes.chunk_routes import chunking_bp
@@ -20,8 +19,6 @@ app.register_blueprint(chroma_bp)
 app.register_blueprint(retrieval_bp)
 app.register_blueprint(chat_bp)
 
-
-
 @app.route("/")
 def home():
     response = {
@@ -31,13 +28,10 @@ def home():
             "Delete": "DELETE /api/documents/<document_id>"
         },
         "supported_formats": ["PDF", "TXT"]
-    }
-    
+    }   
     return Response(
         json.dumps(response, indent=2),
         mimetype="application/json"
     )
-
-
 if __name__ == "__main__":
     app.run()
