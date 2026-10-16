@@ -9,7 +9,10 @@ from services.file_service import extract_file_content
 from services.chunk_service import chunk_documents
 from services.embedd_service import create_embeddings, create_embedding
 from services.chroma_service import store_embeddings
-from services.retrieval_service import retrieve_documents
+from services.retrieval_service import (
+    retrieve_documents,
+    find_requested_source
+)
 from services.generate_service import generate_answer
 
 
@@ -67,7 +70,6 @@ def chat():
                 ]
 
                 embedded_chunks = create_embeddings(chunk_data)
-
                 result = store_embeddings(embedded_chunks)
 
                 uploaded_files.append({
@@ -110,9 +112,7 @@ def chat():
             "message": "No files could be processed.",
             "errors": errors or [
                 {
-                    "message": (
-                        "Please upload a PDF or TXT file."
-                    )
+                    "message": "Please upload a PDF or TXT file."
                 }
             ]
         }), 400
@@ -134,27 +134,31 @@ def chat():
 
         query_embedding = create_embedding(question)
 
+        requested_source = find_requested_source(question)
+
         results = retrieve_documents(
             query_embedding,
-            top_k=20
+            top_k=20,
+            source_filter=requested_source
         )
 
         retrieved_documents = results.get(
             "documents", [[]]
-        )[0]
+        )[0] or []
 
         source_metadata = results.get(
             "metadatas", [[]]
-        )[0]
+        )[0] or []
 
         if not retrieved_documents:
             return jsonify({
-                "status": "error",
-                "message": (
-                    "No document content found. "
-                    "Please upload a document first."
-                )
-            }), 404
+                "status": "success",
+                "answer": (
+                    "I couldn't find enough information to answer "
+                    "that in the uploaded documents."
+                ),
+                "sources": []
+            }), 200
 
         question_words = {
             word.lower().strip(".,?!:;()[]{}\"'")
@@ -167,16 +171,21 @@ def chat():
         seen = set()
 
         for index, document in enumerate(retrieved_documents):
-
             source = (
                 source_metadata[index]
                 if index < len(source_metadata)
                 else {}
             )
 
+            if (
+                requested_source
+                and source.get("source") != requested_source
+            ):
+                continue
+
             document_text = document.lower()
 
-            if not any(
+            if question_words and not any(
                 word in document_text
                 for word in question_words
             ):
@@ -197,22 +206,29 @@ def chat():
 
         if not relevant_documents:
             return jsonify({
-                "status": "error",
-                "message": (
-                    "No sufficiently relevant source pages "
-                    "were found for this question. "
-                    "Try rephrasing your question."
-                )
-            }), 404
+                "status": "success",
+                "answer": (
+                    "I couldn't find enough information to answer "
+                    "that in the uploaded documents."
+                ),
+                "sources": []
+            }), 200
 
-        answer = generate_answer(
+        generated = generate_answer(
             question,
             relevant_documents
         )
 
+        if not generated["answerable"]:
+            return jsonify({
+                "status": "success",
+                "answer": generated["answer"],
+                "sources": []
+            }), 200
+
         return jsonify({
             "status": "success",
-            "answer": answer,
+            "answer": generated["answer"],
             "sources": relevant_sources
         }), 200
 

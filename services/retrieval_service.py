@@ -1,17 +1,111 @@
 
+import re
+from pathlib import Path
+
 from services.chroma_service import get_collection
 
 
-def retrieve_documents(query_embedding, top_k=20, max_distance=None):
-    """Retrieve relevant document chunks from ChromaDB."""
+IGNORED_FILENAME_WORDS = {
+    "resume", "updated", "final", "new", "cv",
+    "pdf", "txt", "doc", "document", "file",
+    "cit", "cse", "skills", "experience"
+}
 
-    print("RETRIEVE SERVICE: getting Chroma collection", flush=True)
+IGNORED_QUESTION_WORDS = {
+    "what", "which", "who", "when", "where", "why",
+    "how", "are", "the", "for", "from", "and", "does",
+    "did", "tell", "show", "give", "list", "find",
+    "resume", "skills", "skill", "experience",
+    "information", "about", "please", "document",
+    "uploaded", "summarize", "summary", "explain",
+    "mention", "mentioned", "provide", "describe"
+}
+
+
+def get_filename_tokens(filename):
+    filename = Path(filename).stem.lower()
+    tokens = set(re.findall(r"[a-z]+", filename))
+    return tokens - IGNORED_FILENAME_WORDS
+
+
+def find_requested_source(question):
+    """
+    Identify a uniquely mentioned uploaded document.
+    Returns the exact source filename or None.
+    """
 
     collection = get_collection()
-    total_chunks = collection.count()
+
+    stored = collection.get(include=["metadatas"])
+    metadatas = stored.get("metadatas", []) or []
+
+    available_sources = sorted({
+        metadata.get("source")
+        for metadata in metadatas
+        if metadata and metadata.get("source")
+    })
+
+    question_tokens = set(
+        re.findall(r"[a-z]+", question.lower())
+    ) - IGNORED_QUESTION_WORDS
+
+    matches = []
+
+    for source in available_sources:
+        filename_tokens = get_filename_tokens(source)
+
+        if filename_tokens.intersection(question_tokens):
+            matches.append(source)
+
+    if len(matches) == 1:
+        print(
+            f"Requested document: {matches[0]}",
+            flush=True
+        )
+        return matches[0]
+
+    if len(matches) > 1:
+        print(
+            f"Multiple documents matched the question: {matches}",
+            flush=True
+        )
+
+    return None
+
+
+def retrieve_documents(
+    query_embedding,
+    top_k=20,
+    max_distance=None,
+    source_filter=None
+):
+    """Retrieve relevant chunks, optionally from one document."""
+
+    print(
+        "RETRIEVE SERVICE: getting Chroma collection",
+        flush=True
+    )
+
+    collection = get_collection()
+
+    where = {"source": source_filter} if source_filter else None
+
+    if where:
+        matching_chunks = collection.get(
+            where=where,
+            include=[]
+        )
+        total_chunks = len(
+            matching_chunks.get("ids", [])
+        )
+    else:
+        total_chunks = collection.count()
 
     if total_chunks == 0:
-        print("No documents found in ChromaDB.", flush=True)
+        print(
+            "No matching documents found in ChromaDB.",
+            flush=True
+        )
         return {
             "documents": [[]],
             "metadatas": [[]],
@@ -21,11 +115,20 @@ def retrieve_documents(query_embedding, top_k=20, max_distance=None):
 
     top_k = max(1, min(int(top_k), total_chunks))
 
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=top_k,
-        include=["documents", "metadatas", "distances"]
-    )
+    query_args = {
+        "query_embeddings": [query_embedding],
+        "n_results": top_k,
+        "include": [
+            "documents",
+            "metadatas",
+            "distances"
+        ]
+    }
+
+    if where:
+        query_args["where"] = where
+
+    results = collection.query(**query_args)
 
     documents = results.get("documents", [[]])[0] or []
     metadatas = results.get("metadatas", [[]])[0] or []
@@ -35,8 +138,18 @@ def retrieve_documents(query_embedding, top_k=20, max_distance=None):
     candidates = []
 
     for i, document in enumerate(documents):
-        metadata = metadatas[i] if i < len(metadatas) else {}
-        distance = distances[i] if i < len(distances) else None
+        metadata = (
+            metadatas[i]
+            if i < len(metadatas)
+            else {}
+        )
+
+        distance = (
+            distances[i]
+            if i < len(distances)
+            else None
+        )
+
         chunk_id = ids[i] if i < len(ids) else None
 
         candidates.append({
@@ -48,29 +161,45 @@ def retrieve_documents(query_embedding, top_k=20, max_distance=None):
 
     if max_distance is not None:
         candidates = [
-            item for item in candidates
+            item
+            for item in candidates
             if item["distance"] is not None
             and item["distance"] <= max_distance
         ]
 
-    print("\n RETRIEVED CHUNKS ", flush=True)
+    print("\nRETRIEVED CHUNKS", flush=True)
 
     for i, item in enumerate(candidates, start=1):
         print(f"\nChunk {i}", flush=True)
         print(f"ID: {item['id']}", flush=True)
-        print(f"Source: {item['metadata'].get('source')}", flush=True)
-        print(f"Page: {item['metadata'].get('page')}", flush=True)
+        print(
+            f"Source: {item['metadata'].get('source')}",
+            flush=True
+        )
+        print(
+            f"Page: {item['metadata'].get('page')}",
+            flush=True
+        )
         print(f"Distance: {item['distance']}", flush=True)
-        print(f"Text: {item['document']}", flush=True)
 
-    print(f"\nRelevant candidates returned: {len(candidates)}",
-          flush=True)
-    print("END RETRIEVED CHUNKS \n", flush=True)
+    print(
+        f"\nRelevant candidates returned: {len(candidates)}",
+        flush=True
+    )
+    print("END RETRIEVED CHUNKS\n", flush=True)
 
     return {
         **results,
-        "documents": [[item["document"] for item in candidates]],
-        "metadatas": [[item["metadata"] for item in candidates]],
-        "distances": [[item["distance"] for item in candidates]],
-        "ids": [[item["id"] for item in candidates]]
+        "documents": [
+            [item["document"] for item in candidates]
+        ],
+        "metadatas": [
+            [item["metadata"] for item in candidates]
+        ],
+        "distances": [
+            [item["distance"] for item in candidates]
+        ],
+        "ids": [
+            [item["id"] for item in candidates]
+        ]
     }
