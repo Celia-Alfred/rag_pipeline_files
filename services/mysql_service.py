@@ -1,7 +1,6 @@
 import mysql.connector
 from config import MYSQL_CONFIG
 
-
 def get_db_connection():
     connection = mysql.connector.connect(
         host=MYSQL_CONFIG["host"],

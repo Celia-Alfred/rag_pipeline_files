@@ -2,3 +2,8 @@ venv/
 .env
 __pycache__/
 *.pyc
+chroma_db/
+chunks.json
+documents.json
+embeddings.json
+extract.json

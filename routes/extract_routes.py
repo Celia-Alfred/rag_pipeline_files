@@ -17,7 +17,7 @@ def extract_data():
         cursor = connection.cursor(dictionary=True)
 
         cursor.execute("""
-            SELECT id, title, conntent, category, created_at
+            SELECT id, title, content, category, created_at
             FROM document
         """)
 
